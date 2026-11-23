@@ -9,7 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   mensajeError,
@@ -45,7 +45,6 @@ const MAX_ULTIMOS = 10;
 
 export default function Inicio() {
   const c = useTema();
-  const insets = useSafeAreaInsets();
   const { sesion, cerrarSesion } = useSesion();
   const usuarioId = sesion?.user.id;
 
@@ -117,7 +116,7 @@ export default function Inicio() {
   return (
     <SafeAreaView style={[styles.pantalla, { backgroundColor: c.fondo }]} edges={['top', 'left', 'right']}>
       <ScrollView
-        contentContainerStyle={[styles.contenido, { paddingBottom: 96 + insets.bottom }]}
+        contentContainerStyle={[styles.contenido, { paddingBottom: espacio.xl }]}
         refreshControl={
           <RefreshControl refreshing={refrescando} onRefresh={refrescar} tintColor={c.primario} />
         }>
@@ -196,22 +195,6 @@ export default function Inicio() {
         )}
       </ScrollView>
 
-      {/* Botón flotante */}
-      <View pointerEvents="box-none" style={[styles.capaFab, { bottom: espacio.l + insets.bottom }]}>
-        <View pointerEvents="box-none" style={styles.anchoFab}>
-          <Pressable
-            onPress={() => router.push('/agregar')}
-            disabled={!espacioId}
-            style={({ pressed }) => [
-              styles.fab,
-              { backgroundColor: c.primario, opacity: !espacioId ? 0.5 : pressed ? 0.85 : 1 },
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Agregar movimiento">
-            <Text style={[styles.fabTexto, { color: c.sobrePrimario }]}>+</Text>
-          </Pressable>
-        </View>
-      </View>
     </SafeAreaView>
   );
 }
@@ -326,15 +309,4 @@ const styles = StyleSheet.create({
   filaArriba: { flexDirection: 'row', alignItems: 'center', gap: espacio.m },
   filaTitulo: { fontSize: 16, fontWeight: '700' },
   filaMonto: { fontSize: 16, fontWeight: '700' },
-  capaFab: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
-  anchoFab: { width: '100%', maxWidth: ANCHO_MAX, alignItems: 'flex-end', paddingHorizontal: espacio.l },
-  fab: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 4px 12px rgba(16, 0, 43, 0.3)',
-  },
-  fabTexto: { fontSize: 34, fontWeight: '600', lineHeight: 38 },
 });

@@ -91,8 +91,14 @@ export async function obtenerCarpeta(id: string): Promise<Carpeta | null> {
 
 /** null = sin límite. */
 export async function guardarPresupuesto(carpetaId: string, presupuesto: number | null): Promise<void> {
-  const { error } = await supabase.from('carpetas').update({ presupuesto_mensual: presupuesto }).eq('id', carpetaId);
+  const { data, error } = await supabase
+    .from('carpetas')
+    .update({ presupuesto_mensual: presupuesto })
+    .eq('id', carpetaId)
+    .select('id');
   if (error) throw error;
+  // Con RLS, un update no permitido no da error: simplemente actualiza 0 filas.
+  if (!data || data.length === 0) throw { message: 'row-level security: nada actualizado', code: '42501' };
 }
 
 export async function obtenerMovimientosMes(

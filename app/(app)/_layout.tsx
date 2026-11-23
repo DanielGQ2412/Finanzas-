@@ -23,7 +23,10 @@ export default function LayoutPrivado() {
   return (
     <MesProvider>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.fondo } }}>
+        <Stack.Screen name="(tabs)" />
         <Stack.Screen name="agregar" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="pago-fijo" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="nueva-carpeta" options={{ presentation: 'modal' }} />
       </Stack>
     </MesProvider>
   );
