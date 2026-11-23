@@ -3,8 +3,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { AppState, Platform } from 'react-native';
 
-const url = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
-const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
+const urlEnv = (process.env.EXPO_PUBLIC_SUPABASE_URL ?? '').trim();
+const keyEnv = (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '').trim();
+
+// Si la URL no es http(s) (por ejemplo, el texto "PEGA_AQUI_..."), se trata como no configurada
+// para que la app muestre un aviso en vez de cerrarse.
+const url = /^https?:\/\/\S+$/i.test(urlEnv) ? urlEnv : '';
+const anonKey = keyEnv && !keyEnv.startsWith('PEGA_AQUI') ? keyEnv : '';
 
 /** true si faltan las variables del archivo .env */
 export const faltaConfiguracion = !url || !anonKey;

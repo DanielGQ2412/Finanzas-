@@ -38,7 +38,6 @@ export default function Inicio() {
 
     if (perfil.error || lista.error) {
       setError('No se pudieron cargar tus datos. Deslizá hacia abajo para reintentar.');
-      console.warn(perfil.error ?? lista.error);
     }
     setNombre((perfil.data?.nombre as string | undefined) ?? null);
     setEspacios((lista.data as Espacio[] | null) ?? []);
