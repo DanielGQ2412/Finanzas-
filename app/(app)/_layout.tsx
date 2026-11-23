@@ -1,6 +1,7 @@
 import { Redirect, Stack } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 
+import { MesProvider } from '@/lib/mes';
 import { useSesion } from '@/lib/sesion';
 import { useTema } from '@/lib/tema';
 
@@ -20,8 +21,10 @@ export default function LayoutPrivado() {
   if (!sesion) return <Redirect href="/login" />;
 
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.fondo } }}>
-      <Stack.Screen name="agregar" options={{ presentation: 'modal' }} />
-    </Stack>
+    <MesProvider>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.fondo } }}>
+        <Stack.Screen name="agregar" options={{ presentation: 'modal' }} />
+      </Stack>
+    </MesProvider>
   );
 }

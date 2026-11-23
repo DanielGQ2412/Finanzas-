@@ -21,10 +21,12 @@ import {
   type Carpeta,
   type Movimiento,
 } from '@/lib/finanzas';
-import { colones, fechaCorta, mesActual, moverMes, nombreMes, type Mes } from '@/lib/formato';
+import { colones, fechaCorta, nombreMes } from '@/lib/formato';
+import { useMes } from '@/lib/mes';
 import { useSesion } from '@/lib/sesion';
 import { supabase } from '@/lib/supabase';
 import { ALTURA_TACTIL, espacio, radio, useTema, type Colores } from '@/lib/tema';
+import { ANCHO_MAX, BarraPresupuesto, CajaError, SelectorMes } from '@/lib/ui';
 
 const ETIQUETA_TIPO: Record<string, string> = {
   fijo: 'Fijo',
@@ -47,7 +49,7 @@ export default function Inicio() {
   const { sesion, cerrarSesion } = useSesion();
   const usuarioId = sesion?.user.id;
 
-  const [mes, setMes] = useState<Mes>(mesActual);
+  const { mes, cambiarMes: moverMes } = useMes();
   const [nombre, setNombre] = useState<string | null>(null);
   const [espacioId, setEspacioId] = useState<string | null>(null);
   const [carpetas, setCarpetas] = useState<Carpeta[]>([]);
@@ -103,7 +105,7 @@ export default function Inicio() {
 
   const cambiarMes = (delta: number) => {
     setCargando(true);
-    setMes((m) => moverMes(m, delta));
+    moverMes(delta);
   };
 
   const resumen = resumenMes(movs);
@@ -134,17 +136,8 @@ export default function Inicio() {
         </View>
 
         {/* Selector de mes */}
-        <View style={styles.selectorMes}>
-          <BotonFlecha c={c} texto="‹" etiqueta="Mes anterior" onPress={() => cambiarMes(-1)} />
-          <Text style={[styles.nombreMes, { color: c.texto }]}>{nombreMes(mes)}</Text>
-          <BotonFlecha c={c} texto="›" etiqueta="Mes siguiente" onPress={() => cambiarMes(1)} />
-        </View>
-
-        {error ? (
-          <View style={[styles.cajaError, { borderColor: c.error }]} accessibilityRole="alert">
-            <Text style={{ color: c.error }}>{error}</Text>
-          </View>
-        ) : null}
+        <SelectorMes c={c} mes={mes} onCambiar={cambiarMes} />
+        <CajaError c={c} texto={error} />
 
         {cargando && !espacioId ? (
           <ActivityIndicator color={c.primario} size="large" style={{ marginTop: espacio.xl }} />
@@ -223,18 +216,6 @@ export default function Inicio() {
   );
 }
 
-function BotonFlecha({ c, texto, etiqueta, onPress }: { c: Colores; texto: string; etiqueta: string; onPress: () => void }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.flecha, { backgroundColor: c.superficie, borderColor: c.borde, opacity: pressed ? 0.7 : 1 }]}
-      accessibilityRole="button"
-      accessibilityLabel={etiqueta}>
-      <Text style={[styles.flechaTexto, { color: c.primario }]}>{texto}</Text>
-    </Pressable>
-  );
-}
-
 function Dato({ c, titulo, monto }: { c: Colores; titulo: string; monto: number }) {
   return (
     <View style={styles.dato}>
@@ -249,11 +230,18 @@ function Dato({ c, titulo, monto }: { c: Colores; titulo: string; monto: number 
 function FilaCarpeta({ c, carpeta, gastado, primera }: { c: Colores; carpeta: Carpeta; gastado: number; primera: boolean }) {
   const tope = carpeta.presupuesto_mensual;
   const tienePresupuesto = tope != null && tope > 0;
-  const proporcion = tienePresupuesto ? Math.min(gastado / tope, 1) : 0;
   const excedido = tienePresupuesto && gastado > tope;
 
   return (
-    <View style={[styles.fila, !primera && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.borde }]}>
+    <Pressable
+      onPress={() => router.push({ pathname: '/carpeta/[id]', params: { id: carpeta.id } })}
+      style={({ pressed }) => [
+        styles.fila,
+        !primera && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.borde },
+        pressed && { backgroundColor: c.borde },
+      ]}
+      accessibilityRole="button"
+      accessibilityLabel={`${carpeta.nombre}, ${colones(gastado)} gastado${tienePresupuesto ? ` de ${colones(tope)}` : ''}. Ver detalle`}>
       <View style={styles.filaArriba}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.filaTitulo, { color: c.texto }]}>{carpeta.nombre}</Text>
@@ -265,21 +253,10 @@ function FilaCarpeta({ c, carpeta, gastado, primera }: { c: Colores; carpeta: Ca
             <Text style={{ color: c.textoSuave, fontSize: 13 }}>de {colones(tope)}</Text>
           ) : null}
         </View>
+        <Text style={{ color: c.textoSuave, fontSize: 22 }}>›</Text>
       </View>
-      {tienePresupuesto ? (
-        <View
-          style={[styles.barra, { backgroundColor: c.borde }]}
-          accessibilityRole="progressbar"
-          accessibilityValue={{ min: 0, max: 100, now: Math.round(proporcion * 100) }}>
-          <View
-            style={[
-              styles.barraRelleno,
-              { width: `${proporcion * 100}%`, backgroundColor: excedido ? c.error : c.primario },
-            ]}
-          />
-        </View>
-      ) : null}
-    </View>
+      {tienePresupuesto ? <BarraPresupuesto c={c} gastado={gastado} tope={tope} /> : null}
+    </Pressable>
   );
 }
 
@@ -312,8 +289,6 @@ function FilaMovimiento({ c, mov, titulo, primera }: { c: Colores; mov: Movimien
   );
 }
 
-const ANCHO_MAX = 720;
-
 const styles = StyleSheet.create({
   pantalla: { flex: 1 },
   contenido: {
@@ -333,18 +308,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  selectorMes: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  nombreMes: { fontSize: 20, fontWeight: '700' },
-  flecha: {
-    width: ALTURA_TACTIL,
-    height: ALTURA_TACTIL,
-    borderRadius: radio.m,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  flechaTexto: { fontSize: 28, fontWeight: '700', lineHeight: 32 },
-  cajaError: { borderWidth: 1.5, borderRadius: radio.m, padding: espacio.m },
   tarjeta: { borderRadius: radio.l, padding: espacio.l, gap: espacio.s },
   tarjetaTitulo: { fontSize: 15, fontWeight: '600' },
   tarjetaMonto: { fontSize: 40, fontWeight: '800' },
@@ -363,8 +326,6 @@ const styles = StyleSheet.create({
   filaArriba: { flexDirection: 'row', alignItems: 'center', gap: espacio.m },
   filaTitulo: { fontSize: 16, fontWeight: '700' },
   filaMonto: { fontSize: 16, fontWeight: '700' },
-  barra: { height: 8, borderRadius: 4, overflow: 'hidden' },
-  barraRelleno: { height: '100%', borderRadius: 4 },
   capaFab: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   anchoFab: { width: '100%', maxWidth: ANCHO_MAX, alignItems: 'flex-end', paddingHorizontal: espacio.l },
   fab: {

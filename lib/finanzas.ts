@@ -64,25 +64,49 @@ export async function obtenerEspacioPersonal(usuarioId: string): Promise<string 
 export async function obtenerCarpetas(espacioId: string): Promise<Carpeta[]> {
   const { data, error } = await supabase
     .from('carpetas')
-    .select('id, nombre, tipo, prioridad, presupuesto_mensual, orden')
+    .select(COLUMNAS_CARPETA)
     .eq('espacio_id', espacioId)
     .eq('archivada', false)
     .is('padre_id', null)
     .order('orden')
     .order('nombre');
   if (error) throw error;
-  return (data ?? []).map((c) => ({
-    ...c,
-    presupuesto_mensual: c.presupuesto_mensual == null ? null : Number(c.presupuesto_mensual),
-  })) as Carpeta[];
+  return (data ?? []).map(normalizarCarpeta);
 }
 
-export async function obtenerMovimientosMes(espacioId: string, mes: Mes): Promise<Movimiento[]> {
+const COLUMNAS_CARPETA = 'id, nombre, tipo, prioridad, presupuesto_mensual, orden';
+
+function normalizarCarpeta(c: Record<string, unknown>): Carpeta {
+  return {
+    ...c,
+    presupuesto_mensual: c.presupuesto_mensual == null ? null : Number(c.presupuesto_mensual),
+  } as Carpeta;
+}
+
+export async function obtenerCarpeta(id: string): Promise<Carpeta | null> {
+  const { data, error } = await supabase.from('carpetas').select(COLUMNAS_CARPETA).eq('id', id).maybeSingle();
+  if (error) throw error;
+  return data ? normalizarCarpeta(data) : null;
+}
+
+/** null = sin límite. */
+export async function guardarPresupuesto(carpetaId: string, presupuesto: number | null): Promise<void> {
+  const { error } = await supabase.from('carpetas').update({ presupuesto_mensual: presupuesto }).eq('id', carpetaId);
+  if (error) throw error;
+}
+
+export async function obtenerMovimientosMes(
+  espacioId: string,
+  mes: Mes,
+  carpetaId?: string,
+): Promise<Movimiento[]> {
   const { desde, hasta } = rangoMes(mes);
-  const { data, error } = await supabase
+  let consulta = supabase
     .from('movimientos')
     .select('id, carpeta_id, tipo, monto, fecha, descripcion, prioridad, pagado, creado_en')
-    .eq('espacio_id', espacioId)
+    .eq('espacio_id', espacioId);
+  if (carpetaId) consulta = consulta.eq('carpeta_id', carpetaId);
+  const { data, error } = await consulta
     .gte('fecha', desde)
     .lt('fecha', hasta)
     .order('fecha', { ascending: false })
