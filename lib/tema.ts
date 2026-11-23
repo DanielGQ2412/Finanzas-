@@ -10,6 +10,12 @@ export type Colores = {
   positivo: string;
   error: string;
   borde: string;
+  /** Fondo de la tarjeta grande oscura (resumen del mes). */
+  tarjeta: string;
+  sobreTarjeta: string;
+  sobreTarjetaSuave: string;
+  /** Menta de marca: dinero positivo sobre fondos oscuros. */
+  menta: string;
 };
 
 const claro: Colores = {
@@ -22,6 +28,10 @@ const claro: Colores = {
   positivo: '#2D8A5F',
   error: '#C1121F',
   borde: '#DDD3EA',
+  tarjeta: '#10002B',
+  sobreTarjeta: '#FFFFFF',
+  sobreTarjetaSuave: '#C8B6E2',
+  menta: '#74C69D',
 };
 
 const oscuro: Colores = {
@@ -34,6 +44,10 @@ const oscuro: Colores = {
   positivo: '#74C69D',
   error: '#FF6B6B',
   borde: '#2E2A3A',
+  tarjeta: '#240046',
+  sobreTarjeta: '#FFFFFF',
+  sobreTarjetaSuave: '#C8B6E2',
+  menta: '#74C69D',
 };
 
 /** Colores de marca fijos (referencia). */

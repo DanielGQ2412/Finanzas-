@@ -20,8 +20,8 @@ export default function LayoutPrivado() {
   if (!sesion) return <Redirect href="/login" />;
 
   return (
-    <Stack
-      screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.fondo } }}
-    />
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.fondo } }}>
+      <Stack.Screen name="agregar" options={{ presentation: 'modal' }} />
+    </Stack>
   );
 }
